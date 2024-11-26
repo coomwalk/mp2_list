@@ -2,6 +2,8 @@
 #define __ASD_LIST__
 
 #include <iostream>
+#include <iterator> // For std::forward_iterator_tag
+#include <cstddef>  // For std::ptrdiff_t
 using namespace std;
 
 template <typename DataType>
@@ -16,18 +18,29 @@ struct Node
   bool operator!=(const Node& node2) const;
 };
 
+// example
+// https://internalpointers.com/post/writing-custom-iterators-modern-cpp 
+
 template <typename DataType>
-class listIterator
+class listIterator : public std::iterator<std::forward_iterator_tag, DataType>
 {
-private:
-	Node<DataType>* p;
 public:
-	listIterator(Node<DataType>* tmp);
-	DataType& operator*();
+	using iterator_category = std::forward_iterator_tag;
+	using difference_type   = std::ptrdiff_t;
+	using value_type = DataType;
+	using pointer = Node<DataType>*;
+	using reference = DataType&;
+
+	listIterator(pointer* tmp) : p(tmp) {};
+	reference operator*();
+	pointer* operator->();
 	listIterator& operator++();
 	listIterator operator++(int);
 	bool operator==(const listIterator& it2) const;
 	bool operator!=(const listIterator& it2) const;
+
+private:
+	pointer p;
 };
 
 template <typename DataType>
