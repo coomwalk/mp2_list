@@ -33,7 +33,7 @@ public:
 
 	listIterator(pointer* tmp) : p(tmp) {};
 	reference operator*();
-	pointer* operator->();
+	pointer  operator->();
 	listIterator& operator++();
 	listIterator operator++(int);
 	bool operator==(const listIterator& it2) const;
@@ -47,10 +47,12 @@ template <typename DataType>
 class List
 {
   Node<DataType>* head;
-//  Node<DataType>* tail; // по желанию
 
 public:
-  List();
+  List(); // создать пустой список
+
+  List(const DataType& d); // создать список из одного звена
+  
   bool isEmpty();
 
   void InsertToHead(const DataType& d); // вставить элемент d первым
@@ -61,7 +63,8 @@ public:
 
   DataType ViewTail(); // посмотреть последнего
 										
-  void Delete(const DataType& d); // удалить звено со значением data = d											
+  void Delete(const DataType& d); // удалить звено со значением data = d	
+  
   listIterator<DataType> begin(); // получить итератор на первое звено 
 
   listIterator<DataType> tail(); // получить итератор на последнее звено
