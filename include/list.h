@@ -12,10 +12,9 @@ struct Node
   DataType data;
   Node* next;
   
-  Node(DataType d = 0, Node* n = nullptr);
-  Node(const Node& node2);
-  bool operator==(const Node& node2) const;
-  bool operator!=(const Node& node2) const;
+  Node(DataType d = DataType{}, Node* n = nullptr): data(d),next(n){};
+  bool operator==(const Node& node2) const noexcept{return data == node2.data;};
+  bool operator!=(const Node& node2) const noexcept {return data != node2.data;};
 };
 
 // example
@@ -32,12 +31,12 @@ public:
 	using reference = DataType&;
 
 	listIterator(pointer* tmp) : p(tmp) {};
-	reference operator*();
-	pointer  operator->();
-	listIterator& operator++();
-	listIterator operator++(int);
-	bool operator==(const listIterator& it2) const;
-	bool operator!=(const listIterator& it2) const;
+	reference operator*() {return *p;};
+	pointer  operator->() {return p;};
+	listIterator& operator++() { p = p -> next; return *this;};
+	listIterator operator++(int){listIterator tmp = *this; ++(*this); return tmp;};
+	bool operator==(const listIterator& it2) const {return p == it2.p;};
+	bool operator!=(const listIterator& it2) const {return p != it2.p;};
 
 private:
 	pointer p;
@@ -47,32 +46,109 @@ template <typename DataType>
 class List
 {
   Node<DataType>* head;
-
+  Node<DataType>* last;
 public:
-  List(); // создать пустой список
-
-  List(const DataType& d); // создать список из одного звена
+  List() noexcept : head(nullptr), last(nullptr){}; // создать пустой список
+  List(const DataType& d)
+  {
+    head = new Node<DataType>(d);
+    last = head;
+  }; // создать список из одного звена
   
-  bool isEmpty();
+  bool isEmpty()
+  {
+    return head == nullptr;
+  }
 
-  void InsertToHead(const DataType& d); // вставить элемент d первым
+  void InsertToHead(const DataType& d)
+  {
+    Node<DataType>* p = new Node<DataType>(d);
+    p->next = head;
+    head = p;
+  }; // вставить элемент d первым
 
-  DataType ViewHead(); // посмотреть первого
+  DataType ViewHead()
+  {
+    return head -> data;
+  }; // посмотреть первого
+  ////////////////////////////////
+  void InsertToTail(const DataType& d)
+  {
+    Node<DataType>* p = new Node<DataType>(d);
+    last -> next = p;
+    last = p;
+  }; // вставить элемент d последним
+
+  DataType ViewTail()
+  {
+    return last ->data;
+  }; // посмотреть последнего
+			///////////////////////////////////////////							
+  void Delete(const DataType& d)
+  {
+    if(!(*this->isEmpty))
+    {
+      Node<DataType>* tmp;
+      Node<DataType>* prev;
+      if(head == d)
+      {
+        tmp = head;
+        head = head -> next;
+        delete tmp;
+      }
+      else
+      {
+        prev = head;
+        tmp = head -> next;
+        while(tmp != nullptr)
+        {
+          if(tmp -> data == d)
+          {
+            prev -> next = tmp ->next;
+            if(tmp ->next == nullptr) last = prev;
+            delete tmp;
+            break;
+          }
+        }
+      }
+    }
+    else
+    {
+      throw "list is empty";
+    }
+  }; // удалить звено со значением data = d	
   
-  void InsertToTail(const DataType& d); // вставить элемент d последним
+  listIterator<DataType> begin()
+  {
+    return listIterator<DataType> tmp(head);
+  }; // получить итератор на первое звено 
 
-  DataType ViewTail(); // посмотреть последнего
-										
-  void Delete(const DataType& d); // удалить звено со значением data = d	
-  
-  listIterator<DataType> begin(); // получить итератор на первое звено 
+  listIterator<DataType> tail()
+  {
+    return listIterator<DataType> tmp(last);
+  }; // получить итератор на последнее звено
 
-  listIterator<DataType> tail(); // получить итератор на последнее звено
+  listIterator<DataType> end()
+  {
+    return istIterator<DataType> tmp(nullptr);
+  }; // получить итератор на конец списка
 
-  listIterator<DataType> end(); // получить итератор на конец списка
-
-  ~List();
-
+  ~List()
+  {
+    if(head != nullptr)
+    {
+      Node<DataType>* tmp;
+      tmp = head;
+      while(head -> next != nullptr)
+      {
+        head = tmp -> next;
+        delete tmp;
+        tmp = head;
+      }
+      delete head;
+    }
+  };
+//////////////////////
   List(const List& list2);
   
   List& operator=(const List& list2);

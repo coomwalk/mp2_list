@@ -1,0 +1,5 @@
+set(target_test "tests")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../gtest" "${CMAKE_CURRENT_SOURCE_DIR}/../include" )
+file(GLOB src "test_main.cpp" "test_list.cpp")
+add_executable(${target_test}  ${src})
+target_link_libraries(${target_test} "gtest_liba" )

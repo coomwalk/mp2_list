@@ -1,0 +1,3 @@
+set(target_gtest "gtest_liba")
+file(GLOB src "gtest-all.cc")
+add_library(${target_gtest} STATIC ${src})
