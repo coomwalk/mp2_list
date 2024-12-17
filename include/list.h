@@ -1,6 +1,5 @@
 #ifndef __ASD_LIST__
 #define __ASD_LIST__
-
 #include <iostream>
 #include <map>
 #include <iterator> // For std::forward_iterator_tag
@@ -19,7 +18,7 @@ struct Node
 };
 
 // example
-// https://internalpointers.com/post/writing-custom-iterators-modern-cpp 
+// 
 
 template <typename DataType>
 class listIterator : public std::iterator<std::forward_iterator_tag, DataType>
@@ -31,8 +30,8 @@ public:
 	using pointer = Node<DataType>*;
 	using reference = DataType&;
 
-	listIterator(pointer* tmp) : p(tmp) {};
-	reference operator*() {return *p;};
+	listIterator(pointer tmp) : p(tmp) {};
+  reference operator*() {return *p;};
 	pointer  operator->() {return p;};
 	listIterator& operator++() { p = p -> next; return *this;};
 	listIterator operator++(int){listIterator tmp = *this; ++(*this); return tmp;};
@@ -65,8 +64,9 @@ public:
   {
     Node<DataType>* p = new Node<DataType>(d);
     p->next = head;
+    if (this -> isEmpty()) last = p;
     head = p;
-  }; // вставить элемент d первым
+  }; // вставить элемент d 
 
   DataType ViewHead()
   {
@@ -76,16 +76,17 @@ public:
   void InsertToTail(const DataType& d)
   {
     Node<DataType>* p = new Node<DataType>(d);
-    last -> next = p;
+
     if((this -> isEmpty()))
     {
+      last = p;
       head = p;
     }
     else
     {
       last -> next = p;
+      last = p;
     }
-    last = p;
   }; // вставить элемент d последним
 
   DataType ViewTail()
@@ -95,18 +96,24 @@ public:
 			///////////////////////////////////////////							
   void Delete(const DataType& d)
   {
-    if(!(*this->isEmpty))
+    if(!(this->isEmpty()))
     {
       Node<DataType>* tmp;
       Node<DataType>* prev;
-      if(head == d)
+      if (this -> GetSize() == 1 && head -> data == d )
+      {
+        delete head;
+        head = nullptr;
+        last =nullptr;
+        return;
+      }
+      if(head -> data == d)
       {
         tmp = head;
         head = head -> next;
         delete tmp;
+        return;
       }
-      else
-      {
         prev = head;
         tmp = head -> next;
         while(tmp != nullptr)
@@ -114,35 +121,39 @@ public:
           if(tmp -> data == d)
           {
             prev -> next = tmp ->next;
-            if(tmp ->next == nullptr) last = prev;
+            if(tmp -> next == nullptr) last = prev;
             delete tmp;
             break;
           }
+          prev = tmp;
+          tmp = tmp -> next;
         }
-      }
+      
     }
   }; // удалить звено со значением data = d	
   
-  listIterator<DataType> begin()
+  listIterator<DataType> begin() const
   {
-    listIterator<DataType> tmp(head);
+    listIterator<DataType> tmp (head);
     return tmp;
   }; // получить итератор на первое звено 
 
-  listIterator<DataType> tail()
+  listIterator<DataType> tail() const
   {
     listIterator<DataType> tmp(last);
     return tmp;
   }; // получить итератор на последнее звено
 
-  listIterator<DataType> end()
+  listIterator<DataType> end() const
   {
     listIterator<DataType> tmp(nullptr);
     return tmp;
   }; // получить итератор на конец списка
 
+
   ~List()
   {
+    this -> BreakCycle();
     if(head != nullptr)
     {
       Node<DataType>* tmp;
@@ -157,7 +168,7 @@ public:
     }
   };
 //////////////////////
-  List(const List& list2)
+  List( const List& list2)
   {
     if(list2.head == nullptr)
     {
@@ -165,9 +176,9 @@ public:
       return;
     }
 
-    head = new Node<DataType>(*list2.head);
-    last =head;
-    for(const auto& i = list2.begin(); i!= list2.end(); i++)
+    head = new Node<DataType>(list2.head -> data);
+    last = head;
+    for(auto i = ++list2.begin(); i!= list2.end(); i++)
     {
       (*this).InsertToTail(i->data);
     }
@@ -175,7 +186,39 @@ public:
   
   List& operator=(const List& list2)
   {
-    return List(list2);
+    if(this == &list2) return *this; 
+    if(list2.head == nullptr)
+    {
+     this -> Clean();
+     return *this;
+    } 
+    int k = list2.GetSize() - this -> GetSize();///
+    if(this -> GetSize() < list2.GetSize())
+    {
+      for (int i = 0; i < k; i++ )
+      {
+        this -> InsertToTail(DataType{});
+      }
+    }
+    if(this -> GetSize() > list2.GetSize())
+    {
+      auto a = this -> begin();
+      for (int i = 0; i < -k; i++ )
+      {
+        auto tmp = a;
+        a++;
+        this -> Delete(tmp -> data);
+        
+      }
+    }
+
+    auto a2 = list2.begin();
+    for(auto i = this -> begin(); i!= this -> end(); i++)
+    {
+      i -> data = a2 -> data;
+      a2++;
+    }
+    return *this;
   };
   
   void Clean()
@@ -196,123 +239,120 @@ public:
     last = nullptr;
   }; // удалить все звенья  
   			
-  void InsertAfter(const listIterator<DataType>& it, const DataType& d)
+  void InsertAfter( const listIterator<DataType>& it, const DataType& d)
   {
     Node <DataType>* tmp = new Node <DataType>(d);
-    tmp->next =  it->next;
-    it->next = tmp;
-
+    auto itcopy = it;
+    if(itcopy == this -> tail())
+    {
+      last -> next = tmp;
+      last = tmp;
+      return;
+    }
+    tmp -> next =  itcopy -> next;
+    itcopy -> next = tmp;
   }; // вставить элемент d после звена node
 
   listIterator<DataType> Search(const DataType& d)
   {
-    for(auto i = (*this).begin(); i!= (*this).end(); i++)
+    for(auto i = this->begin(); i!= this -> end(); i++)
     {
-      if(i->data == d)
+      if(i -> data == d)
       {
         return i;
       }
     }
-    return (*this).end();
+    return this -> end();
 
   }; // найти указатель на звено со значением data = d
   
-  void Delete(const listIterator<DataType>& it)
+  void Delete(const listIterator<DataType>& it)  
   {
-    if(!(this ->isEmpty))
+    if(!(this ->isEmpty()) && it != this -> end())
     {
-    if(head == *it)
-    {
-      head = head->next;
-      delete *it;
-      return;
-    }
-    if(last == *it)
-    {
-      auto tmp = this -> begin();
-      while(tmp -> next != *it)
+      if(this -> begin() == it && this -> GetSize() == 1 )
       {
-        tmp++;
+        delete head;
+        head = nullptr;
+        last = nullptr;
+        return;
       }
-      tmp ->next = nullptr;
-      delete *it;
+      if(this -> begin() == it)
+      {
+        auto tmp =  head->next;
+        delete head;
+        head = tmp;
+        return;
+      }
+    if(this -> tail() == it)
+    {
+      Node <DataType>* next_last = head;
+      while(next_last -> next != last)
+      {
+        
+        next_last = next_last -> next;
+      }
+      next_last -> next = nullptr;
+      delete last;
+      last = next_last;
       return;
     }
-    auto tmp = this -> begin();
-    while(tmp -> next != *it)
+    //общий случчай
+    Node <DataType>* pnt = head;
+    auto tmp_it = ++(this -> begin());
+    while(tmp_it != it)
     {
-      tmp++;
+      tmp_it++;
+      pnt = pnt -> next;
     }
-    tmp -> next = it -> next;
-    delete *it;
+    auto it_copy = it;
+    Node <DataType>* l = it_copy -> next;
+    delete (pnt -> next);
+    pnt -> next = l;
     }
+   else throw "error isempty or it = end()";
 
   }; // удалить звено со значением data = d	
-										
+										////////////////////////
+
+
+
   void Delete(const listIterator<DataType>& start, const listIterator<DataType>& finish)
   {
-    if(*start == head)
+    auto copy_start = start;
+    auto copy_finish = finish;
+    bool st = false;
+    bool fn = false;
+    for(auto i = this -> begin(); i != this -> end(); i++)
     {
-      head = finish->next;
-      for(auto i = start; i !=finish; i++)
-      {
-        delete *i;
-      }
-      delete *finish;
+      if (i == copy_start) st = true;
+      if (i == copy_finish) fn = true;
+      if (st == false && fn == true) throw "error itterators";
+    }
+    if (copy_start == this -> begin() && copy_finish == this -> end())
+    {
+      this -> Clean();
       return;
     }
-    auto tmp = this -> begin();
-    while(tmp -> next != *start)
+    for(auto it = copy_start; it != copy_finish; )
     {
-      tmp++;
+        auto tmp = it;
+        tmp++;
+        this -> Delete(it);
+        it = tmp;
     }
-    tmp -> next = finish -> next;;
-    for(auto i = start; i !=finish; i++)
-      {
-        delete *i;
-      }
-    delete *finish;
   };
 
-  void DeleteAll(const DataType& d)
+  void DeleteAll(const DataType& d)///bred
   {
-    if(!(*this->isEmpty))
+    if(!(this->isEmpty()))
     {
-      
-      for(auto i = this -> begin(); i != this -> end(); i++)
+      for (auto it = this -> begin(); it != this -> end();)
       {
-        if(i -> data == d)
-        {
-          if(*i == head)
-          {
-            head = head -> next;
-            delete *i;
-            continue;
-          }
-
-
-          if (*i == last)
-          {
-            auto tmp = this -> begin();
-            while(tmp -> next != *i)
-              {
-                tmp++;
-              }
-            tmp -> next = nullptr;
-            last = *tmp;
-            delete *i;
-            continue;;
-          }
-
-
-          auto tmp = this -> begin();
-            while(tmp -> next != *i)
-              {
-                tmp++;
-              }
-          tmp ->next = i -> next;
-          delete *i;
-        }
+        auto tmp = it;
+        tmp++;
+        if(it -> data == d) this -> Delete(it);
+        it = tmp;
       }
     }
   };
@@ -324,79 +364,92 @@ public:
     {
       Node <DataType>* tmp = head -> next;
       Node <DataType>* newfirst = head;
+      
+      Node <DataType>* old_head = head;
+
 
       while(tmp != nullptr)
       {
-        newfirst -> next = tmp -> next;
+        head -> next = tmp -> next;
         tmp -> next = newfirst;
         newfirst = tmp;
-        tmp = newfirst -> next;
+        tmp = head -> next;
       }
       head = newfirst;
+      last = old_head;
     }
 
   }; // инвертировать список, т.е. звенья должны идти в обратном порядке
 
   List Merge(const listIterator<DataType>& start, const List& list2)
   {
+    if(start != this -> end())
+    {
     List <DataType> tmp;
     //insert to tail data
-    for(auto i = this -> begin(); i != start; i++)
+    auto copy_st = start;
+    for(auto i = this -> begin(); i != copy_st; i++)
     {
       tmp.InsertToTail(i -> data);
     }
-    tmp.InsertToTail(start -> data);
+    tmp.InsertToTail(copy_st -> data);
     for(auto i = list2.begin(); i != list2.end(); i++)
     {
       tmp.InsertToTail(i -> data);
     }
-    auto end = ++start;
+    auto end = ++copy_st;
     for(auto i = end; i != this -> end(); i++)
     {
       tmp.InsertToTail(i -> data);
     }
     return tmp;
-    
+    }
+    else throw "error it";
 
   }; // создать список3, добавив список2 в текущий список после итератора 
 
-  void MergeWith(const listIterator<DataType>& start, const List& list2)
+  void MergeWith(const listIterator<DataType>& start, const List& list2)// bred
   {
-    auto last_old = last;
-    auto ref = *(++start);
-    last = *(start);
-    last -> next = nullptr;
-    for(auto i = list2.begin(); i != list2.end(); i++)
+    if(start != this -> end())
     {
-      this -> InsertToTail(i -> data);
+      auto copy_st = start;
+      for(auto i = list2.begin(); i != list2.end(); i++)
+      {
+       this -> InsertAfter(copy_st, i -> data);
+       copy_st++;
+      }
     }
-    last -> next = ref;
-    last = last_old;
-
+    else throw "error it";
   }; // в *this добавить список2 после итератора
 
-  friend ostream& operator<<(ostream& os, const List<DataType>& l)
+  friend ostream& operator<<(ostream& os,  List<DataType>& l)
   {
-    int i = 0;
+    int k = 0;
     for(auto i = l.begin(); i != l.end(); i++)
     {
-      os<<i<<"elem = "<<i -> data<<" adress: "<< i -> next<<endl;
-      i++;
+      os<<k<<" elem = "<<i -> data<<" next adress: "<< i -> next<<endl;
+      k++;
     }
     
   };
 
-  friend istream& operator>>(istream& is, const List<DataType>& l)///////////////////////////////
-  {
+  //friend istream& operator>>(istream& is,  List<DataType>& l)///////////////////////////////
+ // {
+   // DataType x;
+//try {
+  //  is >> x;
+ //   l.InsertToTail(x);
+//}
+//catch (...) {}
     // как адекватно то написать    
-  };//////////////корректность ввода тип не Datatype
+//  };//////////////корректность ввода тип не Datatype
   
-  void MadeUnique()///////////////////////////////
+  void MadeUnique()
   {
     std::map<DataType, int> zxc;
     for (auto i = this -> begin(); i != this -> end(); i++)
     {
-      if(zxc.find[i -> data] != zxc.end())
+      if(zxc.find(i -> data) == zxc.end())
       {
         zxc[i -> data] = 1;
       }
@@ -416,7 +469,7 @@ public:
   {
     Node <DataType>* slow= head;
     Node <DataType>* fast = head;
-    while (fast != nullptr)
+    while (fast != nullptr && fast->next != nullptr)
     {
       slow = slow -> next;
       fast = (fast -> next) -> next;
@@ -428,14 +481,17 @@ public:
 
   void BreakCycle()
   {
+    if(this -> Cycle())
+    {
     Node <DataType>* slow= head;
     Node <DataType>* fast = head;
-    while (fast != nullptr)
+    while (fast != nullptr && fast->next != nullptr)
     {
       slow = slow -> next;
       fast = (fast -> next) -> next;
-      if(slow == fast) slow -> next = nullptr;
+      if(slow == fast) fast -> next = nullptr;
     } 
+    }
     //два бегунка, где сойдутся next = nullptr
   }; // "разомкнуть" цикл в списке
 
@@ -452,7 +508,7 @@ public:
     return tmp;  
   }; // "зн 1; зн2; " 
 
-  int GetSize()
+  int GetSize() const
   {
     int zxc = 0;
     for(auto i = this -> begin(); i != this -> end(); i++)
@@ -463,22 +519,23 @@ public:
 
   }; // узнать число звеньев в списке
   
-  List Merge(const List& list2)//////////////////////////////////
+  List Merge(const List& list2)
   {
     List tmp(*this);
     for (auto i = list2.begin(); i != list2.end(); i++)
     {
       tmp.InsertToTail(i -> data);
     }
+    return tmp;
 
   }; // создать список3, добавив в конец текущего списка список2
 
-  bool operator==(const List& list2) const
+  bool operator==( const List& list2) const 
   {
-    if(this -> GetSize != list2 -> GetSize) return false;
+    if(this -> GetSize() != list2.GetSize()) return false;
     int i = 0;
     auto zxc1 = this -> begin();
-    auto zxc2 = list2 -> begin();
+    auto zxc2 = list2.begin();
     while (zxc1 != this -> end())
     {
       if(zxc1 -> data != zxc2 -> data) return false;
@@ -489,6 +546,8 @@ public:
     return true;
 
   }; // списки равны, если элементы в них идут в одинаковом порядке
+
+
 };
 
 #endif
