@@ -70,7 +70,9 @@ public:
 
   DataType ViewHead()
   {
+    if (head != nullptr)
     return head -> data;
+    else throw "isempty";
   }; // посмотреть первого
   ////////////////////////////////
   void InsertToTail(const DataType& d)
@@ -91,7 +93,9 @@ public:
 
   DataType ViewTail()
   {
-    return last ->data;
+    if (last != nullptr)
+      return last -> data;
+    else throw "isempty";
   }; // посмотреть последнего
 			///////////////////////////////////////////							
   void Delete(const DataType& d)
